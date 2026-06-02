@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { GeminiModule } from './gemini/gemini.module';
 import { User, UserSchema } from './schemas/user.schema';
 import { ApiConnection, ApiConnectionSchema } from './schemas/api-connection.schema';
 import { TestRun, TestRunSchema } from './schemas/test-run.schema';
@@ -21,6 +22,7 @@ import { ReconciliationReport, ReconciliationReportSchema } from './schemas/reco
       }),
       inject: [ConfigService],
     }),
+    GeminiModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: ApiConnection.name, schema: ApiConnectionSchema },
