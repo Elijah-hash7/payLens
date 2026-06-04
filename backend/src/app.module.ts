@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { GeminiModule } from './gemini/gemini.module';
+import { StripeModule } from './stripe/stripe.module';
 import { User, UserSchema } from './schemas/user.schema';
 import { ApiConnection, ApiConnectionSchema } from './schemas/api-connection.schema';
 import { TestRun, TestRunSchema } from './schemas/test-run.schema';
@@ -23,6 +24,7 @@ import { ReconciliationReport, ReconciliationReportSchema } from './schemas/reco
       inject: [ConfigService],
     }),
     GeminiModule,
+    StripeModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: ApiConnection.name, schema: ApiConnectionSchema },
