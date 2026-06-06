@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { GeminiModule } from './gemini/gemini.module';
 import { StripeModule } from './stripe/stripe.module';
+import { AuthModule } from './auth/auth.module';
 import { User, UserSchema } from './schemas/user.schema';
 import { ApiConnection, ApiConnectionSchema } from './schemas/api-connection.schema';
 import { TestRun, TestRunSchema } from './schemas/test-run.schema';
@@ -25,6 +26,7 @@ import { ReconciliationReport, ReconciliationReportSchema } from './schemas/reco
     }),
     GeminiModule,
     StripeModule,
+    AuthModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: ApiConnection.name, schema: ApiConnectionSchema },
