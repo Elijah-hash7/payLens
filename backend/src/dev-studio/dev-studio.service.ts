@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StripeService } from '../stripe/stripe.service';
 import { WebhookService, WebhookResult } from '../webhook/webhook.service';
 import { ElasticService } from '../elastic/elastic.service';
+import { GeminiService } from '../gemini/gemini.service';
 import type { PaymentSimulationResult } from '../stripe/stripe.service';
 
 export interface RunTestParams {
@@ -16,6 +17,7 @@ export interface RunTestParams {
 export interface TestRunResult {
   payment: PaymentSimulationResult;
   webhook: WebhookResult;
+  explanation: string;
 }
 
 @Injectable()
@@ -24,6 +26,7 @@ export class DevStudioService {
     private readonly stripeService: StripeService,
     private readonly webhookService: WebhookService,
     private readonly elasticService: ElasticService,
+    private readonly geminiService: GeminiService,
   ) {}
 
   async runTest(params: RunTestParams): Promise<TestRunResult> {
@@ -47,6 +50,24 @@ export class DevStudioService {
       payload: webhookPayload,
     });
 
+    // Gemini explains the result in plain English
+    const explanation = await this.geminiService.explainTestRun({
+      scenario,
+      provider: 'stripe',
+      testCard: payment.selectedCard.token,
+      paymentResult: {
+        status: payment.status,
+        chargeId: payment.chargeId,
+        amount: payment.amount,
+        currency: payment.currency,
+        errorCode: payment.errorCode,
+        errorMessage: payment.errorMessage,
+      },
+      webhookStatusCode: webhook.statusCode ?? undefined,
+      webhookBody: webhook.body ? (webhook.body as Record<string, unknown>) : undefined,
+      webhookError: webhook.error ?? undefined,
+    });
+
     // Save to Elastic — non-blocking, errors are swallowed inside indexTestRun
     await this.elasticService.indexTestRun({
       userId: userId ?? 'anonymous',
@@ -64,6 +85,6 @@ export class DevStudioService {
       createdAt: new Date().toISOString(),
     });
 
-    return { payment, webhook };
+    return { payment, webhook, explanation };
   }
 }
