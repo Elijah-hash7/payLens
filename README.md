@@ -36,7 +36,7 @@ Monitoring: Arize (agent accuracy and evaluation tracking)
 
 Create a .env file in the backend directory (using port 3002 to avoid conflicts with 3000/3001):
 ```env
-PORT=3001
+PORT=3002
 MONGODB_URI=mongodb://localhost:27017/paylens
 JWT_SECRET=your_jwt_secret_token_here
 
