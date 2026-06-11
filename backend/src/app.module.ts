@@ -5,9 +5,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { GeminiModule } from './gemini/gemini.module';
 import { StripeModule } from './stripe/stripe.module';
+import { PaystackModule } from './paystack/paystack.module';
 import { AuthModule } from './auth/auth.module';
 import { DevStudioModule } from './dev-studio/dev-studio.module';
 import { ReconStudioModule } from './recon-studio/recon-studio.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
 import { User, UserSchema } from './schemas/user.schema';
 import { ApiConnection, ApiConnectionSchema } from './schemas/api-connection.schema';
 import { TestRun, TestRunSchema } from './schemas/test-run.schema';
@@ -28,9 +30,11 @@ import { ReconciliationReport, ReconciliationReportSchema } from './schemas/reco
     }),
     GeminiModule,
     StripeModule,
+    PaystackModule,
     AuthModule,
     DevStudioModule,
     ReconStudioModule,
+    MonitoringModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: ApiConnection.name, schema: ApiConnectionSchema },

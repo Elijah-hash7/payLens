@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Client } from '@elastic/elasticsearch';
 
-const TEST_RUNS_INDEX = 'paylens-test-runs';
+const RUNS_INDEX = 'paylens-test-runs';
 const TRANSACTIONS_INDEX = 'paylens-transactions';
 
 export interface TestRunLog {
@@ -21,21 +21,29 @@ export interface TestRunLog {
   createdAt: string;
 }
 
-export interface TransactionLog {
-  userId: string;
+export interface ElasticTransactionDoc {
+  transactionId: string;
   provider: string;
   providerTransactionId: string;
   amount: number;
   currency: string;
   paidAt: string;
   customerName?: string;
+  customerEmail?: string;
   description?: string;
 }
 
-export interface FuzzyMatchResult {
+export interface TransactionMatchCandidate {
   transactionId: string;
+  provider: string;
+  providerTransactionId: string;
+  amount: number;
+  currency: string;
+  paidAt: string;
+  customerName?: string;
+  customerEmail?: string;
+  description?: string;
   score: number;
-  transaction: TransactionLog;
 }
 
 @Injectable()
@@ -62,20 +70,17 @@ export class ElasticService implements OnModuleInit {
   async onModuleInit() {
     if (!this.enabled) return;
     try {
-      await this.ensureIndex(TEST_RUNS_INDEX, testRunsMappings);
-      await this.ensureIndex(TRANSACTIONS_INDEX, transactionsMappings);
+      await this.ensureIndices();
       this.logger.log('Elasticsearch connected');
     } catch (err) {
       this.logger.warn(`Elasticsearch not reachable: ${(err as Error).message}`);
     }
   }
 
-  // ── Test runs ────────────────────────────────────────────────────────────
-
   async indexTestRun(log: TestRunLog): Promise<void> {
     if (!this.enabled) return;
     try {
-      await this.client.index({ index: TEST_RUNS_INDEX, document: log });
+      await this.client.index({ index: RUNS_INDEX, document: log });
     } catch (err) {
       this.logger.warn(`Failed to index test run: ${(err as Error).message}`);
     }
@@ -83,7 +88,9 @@ export class ElasticService implements OnModuleInit {
 
   async searchTestRuns(userId: string, query?: string): Promise<TestRunLog[]> {
     if (!this.enabled) return [];
+
     const must: object[] = [{ term: { userId } }];
+
     if (query) {
       must.push({
         multi_match: {
@@ -92,111 +99,165 @@ export class ElasticService implements OnModuleInit {
         },
       });
     }
-    const res = await this.client.search<TestRunLog>({
-      index: TEST_RUNS_INDEX,
-      query: { bool: { must } },
-      sort: [{ createdAt: { order: 'desc' } }],
-      size: 50,
-    });
-    return res.hits.hits.map((h) => h._source as TestRunLog);
+
+    try {
+      const res = await this.client.search<TestRunLog>({
+        index: RUNS_INDEX,
+        query: { bool: { must } },
+        sort: [{ createdAt: { order: 'desc' } }],
+        size: 50,
+      });
+
+      return res.hits.hits.map((h) => h._source as TestRunLog);
+    } catch (err) {
+      this.logger.warn(`Failed to search test runs: ${(err as Error).message}`);
+      return [];
+    }
   }
 
-  // ── Transactions ─────────────────────────────────────────────────────────
-
-  async indexTransaction(log: TransactionLog): Promise<string> {
-    if (!this.enabled) return '';
-    const res = await this.client.index({ index: TRANSACTIONS_INDEX, document: log });
-    return res._id;
+  async indexTransaction(userId: string, doc: ElasticTransactionDoc): Promise<void> {
+    if (!this.enabled) return;
+    try {
+      await this.client.index({
+        index: TRANSACTIONS_INDEX,
+        id: doc.transactionId,
+        document: {
+          userId,
+          ...doc,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to index transaction: ${(err as Error).message}`);
+    }
   }
 
-  async fuzzyMatchForInvoice(
+  async deleteTransactionIndex(transactionId: string): Promise<void> {
+    if (!this.enabled) return;
+    try {
+      await this.client.delete({
+        index: TRANSACTIONS_INDEX,
+        id: transactionId,
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to delete transaction index: ${(err as Error).message}`);
+    }
+  }
+
+  async searchTransactionCandidates(
     userId: string,
-    invoice: { customerName: string; amount: number; currency: string },
-  ): Promise<FuzzyMatchResult[]> {
+    params: { customerName: string; amount: number; currency: string },
+  ): Promise<TransactionMatchCandidate[]> {
     if (!this.enabled) return [];
 
-    const amountMin = invoice.amount * 0.95;
-    const amountMax = invoice.amount * 1.05;
+    // Allow amount tolerance for payment gateway processing fees (up to 6% deduction)
+    const minAmount = params.amount * 0.94;
+    const maxAmount = params.amount;
 
-    const res = await this.client.search<TransactionLog>({
-      index: TRANSACTIONS_INDEX,
-      query: {
-        bool: {
-          must: [
-            { term: { userId } },
-            { term: { currency: invoice.currency.toUpperCase() } },
-            { range: { amount: { gte: amountMin, lte: amountMax } } },
-          ],
-          should: [
-            {
-              match: {
-                customerName: {
-                  query: invoice.customerName,
-                  fuzziness: 'AUTO',
-                  boost: 2,
-                },
-              },
-            },
-            {
-              match: {
-                description: {
-                  query: invoice.customerName,
-                  fuzziness: 'AUTO',
-                },
-              },
-            },
-          ],
-          minimum_should_match: 0,
+    const must: object[] = [
+      { term: { userId } },
+      { term: { currency: params.currency.toLowerCase() } },
+    ];
+
+    const should: object[] = [
+      // Fuzzy search on customer name
+      {
+        match: {
+          customerName: {
+            query: params.customerName,
+            fuzziness: 'AUTO',
+          },
         },
       },
-      size: 5,
+      // Exact name match (boosted score)
+      {
+        match_phrase: {
+          customerName: {
+            query: params.customerName,
+            boost: 2.0,
+          },
+        },
+      },
+      // Range check on amount (to capture exact or fee-reduced payments)
+      {
+        range: {
+          amount: {
+            gte: minAmount,
+            lte: maxAmount,
+            boost: 1.5,
+          },
+        },
+      },
+    ];
+
+    try {
+      const res = await this.client.search<ElasticTransactionDoc & { userId: string }>({
+        index: TRANSACTIONS_INDEX,
+        query: {
+          bool: {
+            must,
+            should,
+            minimum_should_match: 1, // must match at least one of the should criteria (e.g. name or amount range)
+          },
+        },
+        size: 5,
+      });
+
+      return res.hits.hits.map((h) => ({
+        ...(h._source as ElasticTransactionDoc),
+        score: h._score ?? 0,
+      }));
+    } catch (err) {
+      this.logger.warn(`Failed to search transaction candidates: ${(err as Error).message}`);
+      return [];
+    }
+  }
+
+  private async ensureIndices() {
+    await this.ensureIndex(RUNS_INDEX, {
+      userId: { type: 'keyword' },
+      scenario: { type: 'text' },
+      provider: { type: 'keyword' },
+      selectedCard: { type: 'keyword' },
+      paymentStatus: { type: 'keyword' },
+      chargeId: { type: 'keyword' },
+      webhookFired: { type: 'boolean' },
+      webhookStatusCode: { type: 'integer' },
+      webhookDurationMs: { type: 'integer' },
+      webhookError: { type: 'text' },
+      errorCode: { type: 'keyword' },
+      errorMessage: { type: 'text' },
+      createdAt: { type: 'date' },
     });
 
-    return res.hits.hits.map((h) => ({
-      transactionId: h._id as string,
-      score: h._score ?? 0,
-      transaction: h._source as TransactionLog,
-    }));
+    await this.ensureIndex(TRANSACTIONS_INDEX, {
+      userId: { type: 'keyword' },
+      transactionId: { type: 'keyword' },
+      provider: { type: 'keyword' },
+      providerTransactionId: { type: 'keyword' },
+      amount: { type: 'double' },
+      currency: { type: 'keyword' },
+      paidAt: { type: 'date' },
+      customerName: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+      customerEmail: { type: 'keyword' },
+      description: { type: 'text' },
+    });
   }
 
-  // ── Shared ────────────────────────────────────────────────────────────────
-
-  private async ensureIndex(index: string, mappings: object) {
+  private async ensureIndex(indexName: string, properties: Record<string, any>) {
     if (!this.enabled) return;
-    const exists = await this.client.indices.exists({ index });
-    if (exists) return;
-    await this.client.indices.create({ index, mappings });
-    this.logger.log(`Created index: ${index}`);
+    try {
+      const exists = await this.client.indices.exists({ index: indexName });
+      if (exists) return;
+
+      await this.client.indices.create({
+        index: indexName,
+        mappings: {
+          properties,
+        },
+      });
+      this.logger.log(`Created index: ${indexName}`);
+    } catch (err) {
+      this.logger.warn(`Failed to create index ${indexName}: ${(err as Error).message}`);
+    }
   }
 }
-
-const testRunsMappings = {
-  properties: {
-    userId: { type: 'keyword' },
-    scenario: { type: 'text' },
-    provider: { type: 'keyword' },
-    selectedCard: { type: 'keyword' },
-    paymentStatus: { type: 'keyword' },
-    chargeId: { type: 'keyword' },
-    webhookFired: { type: 'boolean' },
-    webhookStatusCode: { type: 'integer' },
-    webhookDurationMs: { type: 'integer' },
-    webhookError: { type: 'text' },
-    errorCode: { type: 'keyword' },
-    errorMessage: { type: 'text' },
-    createdAt: { type: 'date' },
-  },
-};
-
-const transactionsMappings = {
-  properties: {
-    userId: { type: 'keyword' },
-    provider: { type: 'keyword' },
-    providerTransactionId: { type: 'keyword' },
-    amount: { type: 'float' },
-    currency: { type: 'keyword' },
-    paidAt: { type: 'date' },
-    customerName: { type: 'text' },
-    description: { type: 'text' },
-  },
-};

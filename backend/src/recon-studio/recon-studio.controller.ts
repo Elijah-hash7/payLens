@@ -2,13 +2,15 @@ import {
   Controller,
   Post,
   Get,
-  Body,
-  Query,
+  Param,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { ReconStudioService } from './recon-studio.service';
 
 @Controller('recon-studio')
@@ -16,42 +18,63 @@ export class ReconStudioController {
   constructor(private readonly reconStudioService: ReconStudioService) {}
 
   @Post('upload')
+  @UseGuards(OptionalJwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   async uploadInvoices(
     @UploadedFile() file: Express.Multer.File,
-    @Query('userId') userId: string,
+    @Req() req: any,
   ) {
     if (!file) throw new BadRequestException('No file uploaded');
-    if (!userId) throw new BadRequestException('userId query param required');
+    const userId = req.user?.userId ?? 'anonymous';
     return this.reconStudioService.uploadInvoicesCsv(userId, file.buffer);
   }
 
-  @Post('transactions')
-  seedTransaction(
-    @Query('userId') userId: string,
-    @Body() body: {
-      provider: string;
-      providerTransactionId: string;
-      amount: number;
-      currency: string;
-      paidAt: string;
-      customerName?: string;
-      description?: string;
-    },
-  ) {
-    if (!userId) throw new BadRequestException('userId query param required');
-    return this.reconStudioService.seedTransaction(userId, body);
+  @Get('invoices')
+  @UseGuards(OptionalJwtAuthGuard)
+  getInvoices(@Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.getInvoices(userId);
+  }
+
+  @Post('sync')
+  @UseGuards(OptionalJwtAuthGuard)
+  async syncTransactions(@Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.syncTransactions(userId);
   }
 
   @Post('reconcile')
-  reconcile(@Query('userId') userId: string) {
-    if (!userId) throw new BadRequestException('userId query param required');
-    return this.reconStudioService.reconcile(userId);
+  @UseGuards(OptionalJwtAuthGuard)
+  async reconcile(@Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.runReconciliation(userId);
   }
 
-  @Get('invoices')
-  getInvoices(@Query('userId') userId: string) {
-    if (!userId) throw new BadRequestException('userId query param required');
-    return this.reconStudioService.getInvoices(userId);
+  @Get('matches')
+  @UseGuards(OptionalJwtAuthGuard)
+  async getMatches(@Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.getMatches(userId);
+  }
+
+  @Post('matches/:id/approve')
+  @UseGuards(OptionalJwtAuthGuard)
+  async approveMatch(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.approveMatch(userId, id);
+  }
+
+  @Post('matches/:id/reject')
+  @UseGuards(OptionalJwtAuthGuard)
+  async rejectMatch(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.rejectMatch(userId, id);
+  }
+
+  @Get('reports')
+  @UseGuards(OptionalJwtAuthGuard)
+  async getReports(@Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.getReport(userId);
   }
 }
