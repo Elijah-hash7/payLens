@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Param,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
@@ -34,5 +35,46 @@ export class ReconStudioController {
     const userId = req.user?.userId ?? 'anonymous';
     return this.reconStudioService.getInvoices(userId);
   }
-}
 
+  @Post('sync')
+  @UseGuards(OptionalJwtAuthGuard)
+  async syncTransactions(@Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.syncTransactions(userId);
+  }
+
+  @Post('reconcile')
+  @UseGuards(OptionalJwtAuthGuard)
+  async reconcile(@Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.runReconciliation(userId);
+  }
+
+  @Get('matches')
+  @UseGuards(OptionalJwtAuthGuard)
+  async getMatches(@Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.getMatches(userId);
+  }
+
+  @Post('matches/:id/approve')
+  @UseGuards(OptionalJwtAuthGuard)
+  async approveMatch(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.approveMatch(userId, id);
+  }
+
+  @Post('matches/:id/reject')
+  @UseGuards(OptionalJwtAuthGuard)
+  async rejectMatch(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.rejectMatch(userId, id);
+  }
+
+  @Get('reports')
+  @UseGuards(OptionalJwtAuthGuard)
+  async getReports(@Req() req: any) {
+    const userId = req.user?.userId ?? 'anonymous';
+    return this.reconStudioService.getReport(userId);
+  }
+}
