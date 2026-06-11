@@ -155,7 +155,7 @@ export class ElasticService implements OnModuleInit {
 
     const must: object[] = [
       { term: { userId } },
-      { term: { currency: params.currency.toLowerCase() } },
+      { term: { currency: params.currency.toUpperCase() } },
     ];
 
     const should: object[] = [

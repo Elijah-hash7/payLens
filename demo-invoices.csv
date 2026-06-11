@@ -1,0 +1,7 @@
+invoiceNumber,customerName,amount,currency,dueDate
+INV-2025-001,Horizon Tech Ltd,3200.00,USD,2025-07-15
+INV-2025-002,BrightWave Media,1875.50,USD,2025-07-20
+INV-2025-003,Nova Corp,4500.00,USD,2025-07-22
+INV-2025-004,Summit Analytics Inc,990.00,USD,2025-07-28
+INV-2025-005,Crestline Partners,2750.75,USD,2025-08-01
+INV-2025-006,Vertex Solutions,650.00,USD,2025-08-05
