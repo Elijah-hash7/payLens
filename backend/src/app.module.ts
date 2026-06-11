@@ -9,6 +9,7 @@ import { PaystackModule } from './paystack/paystack.module';
 import { AuthModule } from './auth/auth.module';
 import { DevStudioModule } from './dev-studio/dev-studio.module';
 import { ReconStudioModule } from './recon-studio/recon-studio.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
 import { User, UserSchema } from './schemas/user.schema';
 import { ApiConnection, ApiConnectionSchema } from './schemas/api-connection.schema';
 import { TestRun, TestRunSchema } from './schemas/test-run.schema';
@@ -33,6 +34,7 @@ import { ReconciliationReport, ReconciliationReportSchema } from './schemas/reco
     AuthModule,
     DevStudioModule,
     ReconStudioModule,
+    MonitoringModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: ApiConnection.name, schema: ApiConnectionSchema },

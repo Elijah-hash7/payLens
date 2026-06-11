@@ -6,9 +6,10 @@ import { PaystackModule } from '../paystack/paystack.module';
 import { WebhookModule } from '../webhook/webhook.module';
 import { ElasticModule } from '../elastic/elastic.module';
 import { GeminiModule } from '../gemini/gemini.module';
+import { MonitoringModule } from '../monitoring/monitoring.module';
 
 @Module({
-  imports: [StripeModule, PaystackModule, WebhookModule, ElasticModule, GeminiModule],
+  imports: [StripeModule, PaystackModule, WebhookModule, ElasticModule, GeminiModule, MonitoringModule],
   controllers: [DevStudioController],
   providers: [DevStudioService],
 })

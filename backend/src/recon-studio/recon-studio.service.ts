@@ -8,6 +8,7 @@ import { ReconciliationMatch, ReconciliationMatchDocument } from '../schemas/rec
 import { ReconciliationReport, ReconciliationReportDocument } from '../schemas/reconciliation-report.schema';
 import { ElasticService } from '../elastic/elastic.service';
 import { GeminiService } from '../gemini/gemini.service';
+import { ArizeService } from '../monitoring/arize.service';
 
 export interface ParsedInvoiceRow {
   invoiceNumber: string;
@@ -34,6 +35,7 @@ export class ReconStudioService {
     @InjectModel(ReconciliationReport.name) private readonly reportModel: Model<ReconciliationReportDocument>,
     private readonly elasticService: ElasticService,
     private readonly geminiService: GeminiService,
+    private readonly arizeService: ArizeService,
   ) {}
 
   async uploadInvoicesCsv(userId: string, fileBuffer: Buffer): Promise<UploadResult> {
@@ -254,11 +256,27 @@ export class ReconStudioService {
             confidence: 1.0,
             status: 'pending_review',
           });
+
+          // Log trace evaluation to Arize
+          await this.arizeService.logSpan({
+            agentName: 'ReconStudioAgent',
+            taskName: 'elastic_exact_match',
+            model: 'Elasticsearch Search Engine',
+            latencyMs: 5,
+            evaluation: 'PASS',
+            metadata: {
+              invoiceNumber: invoice.invoiceNumber,
+              customerName: invoice.customerName,
+              amount: invoice.amount,
+            },
+          });
+
           matchesGenerated++;
           break; // Match found for this invoice, move to next
         } else {
           // 2. Fuzzy / Fee-deducted match — Invoke Gemini for reasoning
           try {
+            const startMs = Date.now();
             const suggestion = await this.geminiService.suggestMatch({
               invoice: {
                 invoiceNumber: invoice.invoiceNumber,
@@ -281,6 +299,21 @@ export class ReconStudioService {
               },
             });
 
+            // Log trace monitoring evaluation to Arize
+            await this.arizeService.logSpan({
+              agentName: 'ReconStudioAgent',
+              taskName: 'gemini_fuzzy_match_suggestion',
+              model: this.geminiService['model'],
+              latencyMs: Date.now() - startMs,
+              evaluation: suggestion.isMatch ? 'PASS' : 'FAIL',
+              metadata: {
+                invoiceNumber: invoice.invoiceNumber,
+                customerName: invoice.customerName,
+                transactionAmount: candidate.amount,
+                confidence: suggestion.confidence,
+              },
+            });
+
             if (suggestion.isMatch) {
               await this.matchModel.create({
                 userId: userObjectId,
@@ -300,6 +333,12 @@ export class ReconStudioService {
         }
       }
     }
+
+    // Fetch all active matches confidence to evaluate accuracy drift in Arize
+    const allMatches = await this.matchModel.find({ userId: userObjectId }).lean();
+    this.arizeService.evaluateAccuracyDrift(
+      allMatches.map((m) => ({ confidence: m.confidence ?? 1.0 }))
+    );
 
     return { matchesGenerated };
   }

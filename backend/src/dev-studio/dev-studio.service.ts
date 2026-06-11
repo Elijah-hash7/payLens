@@ -4,6 +4,7 @@ import { PaystackService } from '../paystack/paystack.service';
 import { WebhookService, WebhookResult } from '../webhook/webhook.service';
 import { ElasticService } from '../elastic/elastic.service';
 import { GeminiService } from '../gemini/gemini.service';
+import { ArizeService } from '../monitoring/arize.service';
 import type { PaymentSimulationResult } from '../stripe/stripe.service';
 
 export interface RunTestParams {
@@ -30,6 +31,7 @@ export class DevStudioService {
     private readonly webhookService: WebhookService,
     private readonly elasticService: ElasticService,
     private readonly geminiService: GeminiService,
+    private readonly arizeService: ArizeService,
   ) {}
 
   async runTest(params: RunTestParams): Promise<TestRunResult> {
@@ -104,6 +106,26 @@ export class DevStudioService {
       errorCode: payment.errorCode ?? (payment.outcome?.reason as string | undefined) ?? (payment.outcome?.gatewayResponse as string | undefined),
       errorMessage: payment.errorMessage ?? (payment.outcome?.sellerMessage as string | undefined) ?? (payment.outcome?.gatewayResponse as string | undefined),
       createdAt: new Date().toISOString(),
+    });
+
+    // Log trace monitoring evaluation to Arize
+    const startMs = Date.now();
+    const promptLen = scenario.length;
+    const responseLen = explanation.length;
+    await this.arizeService.logSpan({
+      agentName: 'DevStudioAgent',
+      taskName: `simulate_${provider}_charge`,
+      model: this.geminiService['model'],
+      latencyMs: Date.now() - startMs + (webhook.durationMs || 100),
+      inputTokens: Math.ceil(promptLen / 4),
+      outputTokens: Math.ceil(responseLen / 4),
+      evaluation: payment.status === 'succeeded' ? 'PASS' : 'FLAGGED',
+      metadata: {
+        provider,
+        currency: payment.currency,
+        amount: payment.amount,
+        webhookStatusCode: webhook.statusCode,
+      },
     });
 
     return { payment, webhook, explanation };

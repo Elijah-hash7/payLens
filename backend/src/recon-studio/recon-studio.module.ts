@@ -8,6 +8,7 @@ import { ReconciliationMatch, ReconciliationMatchSchema } from '../schemas/recon
 import { ReconciliationReport, ReconciliationReportSchema } from '../schemas/reconciliation-report.schema';
 import { ElasticModule } from '../elastic/elastic.module';
 import { GeminiModule } from '../gemini/gemini.module';
+import { MonitoringModule } from '../monitoring/monitoring.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { GeminiModule } from '../gemini/gemini.module';
     ]),
     ElasticModule,
     GeminiModule,
+    MonitoringModule,
   ],
   controllers: [ReconStudioController],
   providers: [ReconStudioService],
