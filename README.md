@@ -1,127 +1,90 @@
-# PayLens — Intelligent Payment Sandbox & Reconciliation Platform
+# PayLens
 
-**PayLens** is a modern financial technology platform equipped with two AI-driven agents that streamline payment workflows. Built for the Google Cloud Rapid Agent Hackathon (Financial Services Track).
+PayLens is a web application with two distinct tools designed to solve common payment integration and bookkeeping challenges.
 
----
+## The Two Tools
 
-## 🌟 The Two Agents
+### Dev Studio (Payment Sandbox Agent)
+Sandboxes from payment providers like Stripe or Paystack often return generic error codes without explanation, require looking up fake card tokens, and suffer from unreliable webhook testing.
 
-### 1. Dev Studio (Payment Sandbox Agent)
-Sandboxes from payment providers (like Stripe or Paystack) often return generic error codes (e.g. `card_declined`) without detail, require looking up fake card tokens, and suffer from unreliable webhook testing. 
-* **What it does**: Connects to your Stripe test account. Describe what you want to test in plain English (e.g., *"Simulate a payment failure due to insufficient funds and alert my webhook"*). 
-* **The Flow**: PayLens selects the correct card token, simulates the transaction against the API, fires the payload to your webhook endpoint, measures delivery latency, and uses **Gemini 2.0** to explain the entire outcome (and any webhook bugs) in plain English.
+Dev Studio connects to your Stripe test account and lets you type what you want to test in plain English. For example, "Simulate a payment failure due to insufficient funds and alert my webhook".
 
-### 2. Recon Studio (Payment Reconciliation Agent)
-Reconciling invoices at the end of the month from multiple payment sources (Stripe, bank feeds, cash) is usually done manually line-by-line using Excel. It is slow and prone to errors caused by name variations, transaction fees, and currency differences.
-* **What it does**: Ingests your transaction streams automatically. Business owners upload their invoice CSV.
-* **The Flow**: **Elastic** executes intelligent matching algorithms (resolving name mismatches, fee deductions, and date ranges). For records with low confidence, **Gemini** reviews the data, outlines its reasoning, and flags candidates for approval. Reconciliations are finished in minutes instead of hours.
+PayLens selects the correct card token, simulates the transaction against the API, fires the payload to your webhook endpoint, measures delivery latency, and uses Gemini to explain the entire outcome and any webhook errors in plain language.
 
----
+### Recon Studio (Payment Reconciliation Agent)
+Reconciling invoices at the end of the month from multiple payment sources is usually done manually line by line in Excel. This is slow and prone to errors caused by name variations, transaction fees, and currency differences.
 
-## 🛠️ Tech Stack
+Recon Studio automatically ingests your transaction streams. You upload your invoice CSV, and Elastic executes matching algorithms to resolve name mismatches, fee deductions, and date ranges. For records with low confidence, Gemini reviews the data, outlines its reasoning, and flags candidates for approval. Reconciliations are finished in minutes instead of hours.
 
-* **Frontend**: Next.js (App Router), Tailwind CSS v4, Vanilla CSS
-* **Backend**: NestJS, TypeScript
-* **Database**: MongoDB (Mongoose models for users, invoices, transactions, and matches)
-* **Search & Logs**: Elasticsearch (indexes Dev Studio test runs and Recon fuzzy matches)
-* **AI Brain**: Gemini (using `@google/genai` SDK)
-* **Monitoring**: Arize (agent accuracy and evaluation tracking)
+## Tech Stack
 
----
+Frontend: Next.js (App Router), Tailwind CSS v4, Vanilla CSS
+Backend: NestJS, TypeScript
+Database: MongoDB (Mongoose models for users, invoices, transactions, and matches)
+Search & Logs: Elasticsearch (indexes Dev Studio test runs and Recon fuzzy matches)
+AI: Gemini (using `@google/genai` SDK)
+Monitoring: Arize (agent accuracy and evaluation tracking)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js (v18+)
-- MongoDB (running instance or URI)
-- Elasticsearch (running instance or Cloud URL)
+- MongoDB running instance
+- Elasticsearch running instance
 
 ### Environment Variables
 
-#### Backend (`backend/.env`)
-Create a `.env` file in the `backend/` directory:
+Create a .env file in the backend directory (using port 3002 to avoid conflicts with 3000/3001):
 ```env
-PORT=3001
+PORT=3002
 MONGODB_URI=mongodb://localhost:27017/paylens
 JWT_SECRET=your_jwt_secret_token_here
 
-# Gemini AI API
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.0-flash
 
-# Elasticsearch (Optional: If not set, logging falls back to debug warnings)
 ELASTIC_URL=http://localhost:9200
 ELASTIC_API_KEY=your_elastic_api_key_optional
 ```
 
-#### Frontend (`frontend/.env.local`)
-Create a `.env.local` file in the `frontend/` directory:
+Create a .env.local file in the frontend directory (pointing to the backend on 3002):
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:3002
 ```
 
----
+### Installation
 
-## 💻 Running the App
+Install dependencies in both directories:
 
-### 1. Install Dependencies
-Run in both directories:
+In backend:
 ```bash
-# In backend/
-npm install
-
-# In frontend/
 npm install
 ```
 
-### 2. Start Backend Server
+In frontend:
 ```bash
-cd backend/
+npm install
+```
+
+### Running the App
+
+Start Backend Server:
+```bash
+cd backend
 npm run start:dev
 ```
-The backend server runs on `http://localhost:3001`.
+The backend server will run on http://localhost:3002.
 
-### 3. Start Frontend Dev Server
+Start Frontend Dev Server on port 3001 (since port 3000 is occupied):
 ```bash
-cd frontend/
-npm run dev
+cd frontend
+npm run dev -- -p 3001
 ```
-Open `http://localhost:3000` in your web browser.
 
----
+Open http://localhost:3001 in your web browser.
 
-## 🔑 Login & Guest Experience
+## Authentication and Guest Access
 
-For testing and demonstration convenience, PayLens features two authentication modes:
-
-1. **Standard Sign In / Registration**: 
-   Create a secure account on the Register page. Accounts are hashed with `bcryptjs` and secured with JWT tokens.
-2. **Continue as Guest (Anonymous Mode)**: 
-   Click **"Continue as Guest"** on the Login screen to bypass registration. The frontend uses a local guest session, and the backend handles all simulations, logging, and matches using a fallback `anonymous` user scope. No registrations are required to inspect the platform!
-
----
-
-## 📂 Project Structure
-
-```
-paylens/
-├── backend/                   # NestJS Application
-│   ├── src/
-│   │   ├── auth/              # JWT Strategy and Optional Auth Guards
-│   │   ├── dev-studio/        # Stripe sandbox payment simulator logic
-│   │   ├── recon-studio/      # CSV invoice parsing and reconciliation
-│   │   ├── elastic/           # Elasticsearch client configuration
-│   │   ├── gemini/            # Google GenAI model interactions
-│   │   ├── schemas/           # MongoDB Mongoose schemas
-│   │   └── main.ts            # Entrypoint
-│   └── package.json
-│
-├── frontend/                  # Next.js Application
-│   ├── app/
-│   │   ├── (auth)/            # Login, Registration pages
-│   │   ├── (dashboard)/       # User Dashboard, Dev Studio, and Recon Studio pages
-│   │   ├── _components/       # Shared Sidebar, AuthGuard
-│   │   └── _lib/              # HTTP fetch helper (api.ts)
-│   └── package.json
-└── PayLens_Project_Brief.md   # Core Hackathon requirements
-```
+You can use the app in two ways:
+1. Standard Sign In and Registration: Create a secure account on the Register page. Accounts are hashed with bcryptjs and secured with JWT tokens.
+2. Guest Session: Click "Continue as Guest" on the Login screen to bypass registration. The frontend uses a local guest session, and the backend handles all simulations, logging, and matches using a fallback anonymous user scope.
