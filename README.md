@@ -1,29 +1,66 @@
 # PayLens
 
-PayLens is a web application with two distinct tools designed to solve common payment integration and bookkeeping challenges.
+PayLens is an intelligent financial operations platform featuring two specialized AI agents designed to solve common payment integration testing and ledger bookkeeping challenges.
 
-## The Two Tools
+## System Architecture
 
-### Dev Studio (Payment Sandbox Agent)
-Sandboxes from payment providers like Stripe or Paystack often return generic error codes without explanation, require looking up fake card tokens, and suffer from unreliable webhook testing.
+```mermaid
+graph TD
+    A[Client Web UI] -->|Prompt / Scenario| B[Dev Studio Agent]
+    A -->|Upload CSV Invoices| C[Recon Studio Agent]
+    
+    subgraph Dev Studio Flow
+        B -->|1. Test Card Map| D[Stripe / Paystack Sandbox APIs]
+        B -->|2. Dispatch Webhook| E[Real Webhook Endpoint]
+        B -->|3. Synthesize & Explain| F[Gemini API]
+        B -->|4. Index Test Logs| G[Elasticsearch Runs Index]
+        B -->|5. Production Traces| H[Arize Monitoring Logs]
+    end
+    
+    subgraph Recon Studio Flow
+        C -->|1. Parse CSV| I[MongoDB Invoice Collection]
+        C -->|2. simulate Ingestion| J[MongoDB Transaction Collection]
+        J -->|3. Index Payments| K[Elasticsearch Transaction Index]
+        C -->|4. Fuzzy Search Candidates| K
+        C -->|5. Ambiguous Evaluation| F
+        C -->|6. Ledger Status Report| L[MongoDB Reports Collection]
+        C -->|7. Evaluator Drift Spans| H
+    end
+```
 
-Dev Studio connects to your Stripe test account and lets you type what you want to test in plain English. For example, "Simulate a payment failure due to insufficient funds and alert my webhook".
+---
 
-PayLens selects the correct card token, simulates the transaction against the API, fires the payload to your webhook endpoint, measures delivery latency, and uses Gemini to explain the entire outcome and any webhook errors in plain language.
+## The Step-By-Step Flows
 
-### Recon Studio (Payment Reconciliation Agent)
-Reconciling invoices at the end of the month from multiple payment sources is usually done manually line by line in Excel. This is slow and prone to errors caused by name variations, transaction fees, and currency differences.
+### Agent 1: Dev Studio (Payment Sandbox Agent)
 
-Recon Studio automatically ingests your transaction streams. You upload your invoice CSV, and Elastic executes matching algorithms to resolve name mismatches, fee deductions, and date ranges. For records with low confidence, Gemini reviews the data, outlines its reasoning, and flags candidates for approval. Reconciliations are finished in minutes instead of hours.
+1. **Input**: The developer inputs their Stripe or Paystack test account API secret key, their target webhook endpoint URL, and a test scenario in plain English (e.g. "Simulate a payment failure due to insufficient funds").
+2. **Token Mapping**: The agent reads the scenario and automatically picks the appropriate card token or credentials required by the sandbox to trigger that specific error.
+3. **Simulation Execution**: The agent triggers a real API charge call against the Stripe or Paystack sandbox environment.
+4. **Webhook Dispatching**: The agent captures the charge response, wraps it inside a provider-shaped webhook event body (Stripe JSON object or Paystack JSON object), fires it to the developer's real server URL, and measures the response time.
+5. **AI Reasoning**: Gemini reads the sandbox payment response, the webhook HTTP status, and the developer's receiver server response body, explaining what went right or wrong in plain language.
+6. **Log Indexing & Tracing**: The run details are indexed in Elasticsearch for logs search, and the execution span is tracked by the Arize monitor to inspect model accuracy and latency.
 
-## Tech Stack
+### Agent 2: Recon Studio (Payment Reconciliation Agent)
 
-Frontend: Next.js (App Router), Tailwind CSS v4, Vanilla CSS
-Backend: NestJS, TypeScript
-Database: MongoDB (Mongoose models for users, invoices, transactions, and matches)
-Search & Logs: Elasticsearch (indexes Dev Studio test runs and Recon fuzzy matches)
-AI: Gemini (using `@google/genai` SDK)
-Monitoring: Arize (agent accuracy and evaluation tracking)
+1. **Ingestion**: The business uploads a CSV file containing outstanding invoices. The agent parses the entries and saves them to MongoDB under the unpaid status.
+2. **Transaction Syncing**: Triggering a sync simulates Fivetran ingestion, creating transactional data from Stripe, Paystack, and bank statements with variations (such as name typos, amount differences due to transaction fees, and unmatched items).
+3. **Fuzzy Search Query**: Elasticsearch indexes the transactions and runs fuzzy queries on customer names and amount tolerances (accounting for payment gateway deductions) to find potential matches.
+4. **Gemini Matching Suggestion**: For exact matches, the status is set directly. For ambiguous or fee-deducted candidates, Gemini evaluates the candidate, suggests a match decision with a confidence score, and describes its logic.
+5. **Human Audit Action**: The user reviews the recommendations, approving or rejecting them. Approvals mark the invoice as paid in MongoDB and remove the payment from the Elasticsearch index.
+6. **Reporting**: The system compiles a ledger balancing snapshot, calculating total volume, outstanding balance, and drift metrics.
+
+---
+
+## Tech Stack & Integrations
+
+- **Gemini**: The model (gemini-2.0-flash) powers payment result explanations and fuzzy matching evaluations.
+- **Elasticsearch**: Handles full-text logs search in Dev Studio and fuzzy-phrase candidate indexing for Recon Studio.
+- **MongoDB**: Serves as the primary transaction, invoice, match, and reports document store.
+- **Arize**: Tracks agent trace spans, latency, and matching accuracy metrics to monitor performance drift in production.
+- **Stripe & Paystack Sandbox APIs**: The payment gateways tested by the Dev Studio agent.
+
+---
 
 ## Getting Started
 
@@ -34,7 +71,7 @@ Monitoring: Arize (agent accuracy and evaluation tracking)
 
 ### Environment Variables
 
-Create a .env file in the backend directory (using port 3002 to avoid conflicts with 3000/3001):
+Create a `.env` file in the `backend` directory (using port 3002 to avoid conflicts):
 ```env
 PORT=3002
 MONGODB_URI=mongodb://localhost:27017/paylens
@@ -47,7 +84,7 @@ ELASTIC_URL=http://localhost:9200
 ELASTIC_API_KEY=your_elastic_api_key_optional
 ```
 
-Create a .env.local file in the frontend directory (pointing to the backend on 3002):
+Create a `.env.local` file in the `frontend` directory:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3002
 ```
@@ -73,9 +110,9 @@ Start Backend Server:
 cd backend
 npm run start:dev
 ```
-The backend server will run on http://localhost:3002.
+The backend server runs on http://localhost:3002.
 
-Start Frontend Dev Server on port 3001 (since port 3000 is occupied):
+Start Frontend Dev Server on port 3001:
 ```bash
 cd frontend
 npm run dev -- -p 3001
@@ -83,8 +120,10 @@ npm run dev -- -p 3001
 
 Open http://localhost:3001 in your web browser.
 
+---
+
 ## Authentication and Guest Access
 
-You can use the app in two ways:
-1. Standard Sign In and Registration: Create a secure account on the Register page. Accounts are hashed with bcryptjs and secured with JWT tokens.
-2. Guest Session: Click "Continue as Guest" on the Login screen to bypass registration. The frontend uses a local guest session, and the backend handles all simulations, logging, and matches using a fallback anonymous user scope.
+You can test the application in two ways:
+1. **Standard JWT Accounts**: Register a secure account on the Register page. Credentials are encrypted using bcryptjs.
+2. **Continue as Guest**: Skip registration entirely by clicking "Continue as Guest" on the Login screen. The app falls back to a guest session using an anonymous database scope, letting judges run live tests immediately without signup.
