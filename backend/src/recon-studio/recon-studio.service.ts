@@ -88,6 +88,7 @@ export class ReconStudioService {
   }
 
   async getInvoices(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) return [];
     return this.invoiceModel
       .find({ userId: new Types.ObjectId(userId) })
       .sort({ createdAt: -1 })
@@ -95,6 +96,7 @@ export class ReconStudioService {
   }
 
   async syncTransactions(userId: string): Promise<{ synced: number; skipped: number }> {
+    if (!Types.ObjectId.isValid(userId)) throw new BadRequestException('Invalid user session — please log in');
     const invoices = await this.invoiceModel.find({ userId: new Types.ObjectId(userId) }).lean();
     if (invoices.length === 0) {
       throw new BadRequestException('Please upload invoices first to seed transaction simulation data');
