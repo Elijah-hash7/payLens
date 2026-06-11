@@ -56,7 +56,7 @@ export default function DashboardPage() {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Metric 1 */}
-        <div className="glass-panel glass-panel-hover rounded-2xl p-5 shadow-lg flex items-center gap-4">
+        <div className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-5 shadow-lg flex items-center gap-4">
           <div className="h-10 w-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
@@ -72,7 +72,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Metric 2 */}
-        <div className="glass-panel glass-panel-hover rounded-2xl p-5 shadow-lg flex items-center gap-4">
+        <div className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-5 shadow-lg flex items-center gap-4">
           <div className="h-10 w-10 rounded-xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -88,7 +88,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Metric 3 */}
-        <div className="glass-panel glass-panel-hover rounded-2xl p-5 shadow-lg flex items-center gap-4">
+        <div className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-5 shadow-lg flex items-center gap-4">
           <div className="h-10 w-10 rounded-xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -104,7 +104,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Metric 4 */}
-        <div className="glass-panel glass-panel-hover rounded-2xl p-5 shadow-lg flex items-center gap-4">
+        <div className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-5 shadow-lg flex items-center gap-4">
           <div className="h-10 w-10 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -136,7 +136,7 @@ export default function DashboardPage() {
             {/* Dev Studio Launch */}
             <a
               href="/dev-studio"
-              className="glass-panel glass-panel-hover rounded-2xl p-6 flex flex-col justify-between h-44 group border border-white/5 bg-gradient-to-br from-blue-950/10 to-transparent hover:border-blue-500/30"
+              className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-6 flex flex-col justify-between h-44 group bg-gradient-to-br from-blue-950/10 to-transparent"
             >
               <div className="h-10 w-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 transition-colors group-hover:bg-blue-600/20">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -154,7 +154,7 @@ export default function DashboardPage() {
             {/* Recon Studio Launch */}
             <a
               href="/recon-studio"
-              className="glass-panel glass-panel-hover rounded-2xl p-6 flex flex-col justify-between h-44 group border border-white/5 bg-gradient-to-br from-purple-950/10 to-transparent hover:border-purple-500/30"
+              className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-6 flex flex-col justify-between h-44 group bg-gradient-to-br from-purple-950/10 to-transparent"
             >
               <div className="h-10 w-10 rounded-xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center text-purple-400 transition-colors group-hover:bg-purple-600/20">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,7 +180,7 @@ export default function DashboardPage() {
             System Operations
           </h2>
 
-          <div className="glass-panel rounded-2xl p-6 space-y-4">
+          <div className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-6 space-y-4">
             {/* Status Item 1 */}
             <div className="flex items-center justify-between text-xs border-b border-gray-900 pb-3">
               <span className="font-semibold text-gray-300">Stripe Integration Sandbox</span>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Activity Timeline */}
-      <div className="glass-panel rounded-2xl p-6">
+      <div className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-6">
         <h2 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
           <svg className="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
