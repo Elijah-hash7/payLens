@@ -85,4 +85,15 @@ export class WebhookService {
       data: { object: chargeData },
     };
   }
+
+  // Builds a Paystack-shaped webhook event from a charge result
+  buildPaystackEvent(
+    event: 'charge.success' | 'charge.failed',
+    chargeData: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return {
+      event,
+      data: chargeData,
+    };
+  }
 }
