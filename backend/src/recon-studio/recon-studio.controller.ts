@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Body,
   Query,
   UploadedFile,
   UseInterceptors,
@@ -23,6 +24,29 @@ export class ReconStudioController {
     if (!file) throw new BadRequestException('No file uploaded');
     if (!userId) throw new BadRequestException('userId query param required');
     return this.reconStudioService.uploadInvoicesCsv(userId, file.buffer);
+  }
+
+  @Post('transactions')
+  seedTransaction(
+    @Query('userId') userId: string,
+    @Body() body: {
+      provider: string;
+      providerTransactionId: string;
+      amount: number;
+      currency: string;
+      paidAt: string;
+      customerName?: string;
+      description?: string;
+    },
+  ) {
+    if (!userId) throw new BadRequestException('userId query param required');
+    return this.reconStudioService.seedTransaction(userId, body);
+  }
+
+  @Post('reconcile')
+  reconcile(@Query('userId') userId: string) {
+    if (!userId) throw new BadRequestException('userId query param required');
+    return this.reconStudioService.reconcile(userId);
   }
 
   @Get('invoices')
