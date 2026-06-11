@@ -575,7 +575,7 @@ export default function ReconStudioPage() {
                 <div className="flex justify-between items-center text-xs pb-3 border-b border-gray-900">
                   <span className="text-gray-400">Balanced Volume</span>
                   <span className="font-bold text-emerald-400">
-                    ${report.matchedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {report.currency}
+                    ${(report.matchedAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {report.currency ?? 'USD'}
                   </span>
                 </div>
 
@@ -583,7 +583,7 @@ export default function ReconStudioPage() {
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gray-400">Outstanding Balance</span>
                   <span className="font-bold text-yellow-500">
-                    ${report.outstandingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {report.currency}
+                    ${(report.outstandingAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {report.currency ?? 'USD'}
                   </span>
                 </div>
               </div>

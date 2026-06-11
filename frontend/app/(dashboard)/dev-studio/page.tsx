@@ -92,12 +92,22 @@ export default function DevStudioPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<TestRunLog | null>(null);
 
-  // Load saved keys on mount
+  // Load saved keys and last result on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setStripeKey(localStorage.getItem('paylens_stripe_key') || '');
       setPaystackKey(localStorage.getItem('paylens_paystack_key') || '');
       setWebhookEndpointUrl(localStorage.getItem('paylens_webhook_url') || '');
+
+      const saved = sessionStorage.getItem('paylens_last_result');
+      if (saved) {
+        try {
+          setResult(JSON.parse(saved));
+          setStep('done');
+        } catch {
+          sessionStorage.removeItem('paylens_last_result');
+        }
+      }
     }
     fetchHistory();
   }, []);
@@ -158,7 +168,8 @@ export default function DevStudioPage() {
     setError('');
     setResult(null);
     setSelectedHistoryItem(null);
-    
+    sessionStorage.removeItem('paylens_last_result');
+
     // Begin Multi-step Visualizer Stepper
     setStep('simulating');
     
@@ -182,6 +193,7 @@ export default function DevStudioPage() {
 
       setResult(response);
       setStep('done');
+      sessionStorage.setItem('paylens_last_result', JSON.stringify(response));
       fetchHistory(); // Refresh searchable history logs
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Simulation failed');
@@ -579,11 +591,12 @@ export default function DevStudioPage() {
 
                 {/* Reset Panel */}
                 <div className="flex justify-end pt-2">
-                  <button 
+                  <button
                     onClick={() => {
                       setResult(null);
                       setSelectedHistoryItem(null);
                       setStep('idle');
+                      sessionStorage.removeItem('paylens_last_result');
                     }}
                     className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1 cursor-pointer"
                   >

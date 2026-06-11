@@ -88,6 +88,7 @@ export class ReconStudioService {
   }
 
   async getInvoices(userId: string) {
+    if (!Types.ObjectId.isValid(userId)) return [];
     return this.invoiceModel
       .find({ userId: new Types.ObjectId(userId) })
       .sort({ createdAt: -1 })
@@ -95,6 +96,7 @@ export class ReconStudioService {
   }
 
   async syncTransactions(userId: string): Promise<{ synced: number; skipped: number }> {
+    if (!Types.ObjectId.isValid(userId)) throw new BadRequestException('Invalid user session — please log in');
     const invoices = await this.invoiceModel.find({ userId: new Types.ObjectId(userId) }).lean();
     if (invoices.length === 0) {
       throw new BadRequestException('Please upload invoices first to seed transaction simulation data');
@@ -216,11 +218,30 @@ export class ReconStudioService {
 
   async runReconciliation(userId: string): Promise<{ matchesGenerated: number }> {
     const userObjectId = new Types.ObjectId(userId);
-    
-    // Clear previous pending reviews to prevent duplicates
-    await this.matchModel.deleteMany({ userId: userObjectId, status: 'pending_review' });
 
-    // Fetch unpaid invoices
+    // Reset all invoices so recon can re-run from scratch
+    await this.invoiceModel.updateMany({ userId: userObjectId }, { status: 'unpaid' });
+
+    // Clear all previous match records
+    await this.matchModel.deleteMany({ userId: userObjectId });
+
+    // Re-index all transactions — approveMatch deletes them from ES, so restore here
+    const allTransactions = await this.transactionModel.find({ userId: userObjectId }).lean();
+    for (const tx of allTransactions) {
+      await this.elasticService.indexTransaction(userId, {
+        transactionId: (tx._id as Types.ObjectId).toString(),
+        provider: tx.provider,
+        providerTransactionId: tx.providerTransactionId,
+        amount: tx.amount,
+        currency: tx.currency,
+        paidAt: (tx.paidAt as Date).toISOString(),
+        customerName: (tx.metadata?.customerName as string) ?? undefined,
+        customerEmail: (tx.metadata?.customerEmail as string) ?? undefined,
+        description: (tx.metadata?.description as string) ?? undefined,
+      });
+    }
+
+    // Fetch unpaid invoices (all were just reset to unpaid)
     const invoices = await this.invoiceModel.find({ userId: userObjectId, status: 'unpaid' });
     let matchesGenerated = 0;
 
@@ -344,6 +365,7 @@ export class ReconStudioService {
   }
 
   async getMatches(userId: string): Promise<ReconciliationMatch[]> {
+    if (!Types.ObjectId.isValid(userId)) return [];
     return this.matchModel
       .find({ userId: new Types.ObjectId(userId) })
       .populate('invoiceId')
