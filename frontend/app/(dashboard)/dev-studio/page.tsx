@@ -169,7 +169,7 @@ export default function DevStudioPage() {
         
         {/* Left Column - Form Config */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/40 backdrop-blur-xl p-6 shadow-xl">
+          <div className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-6 shadow-xl">
             <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
               <svg className="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -292,7 +292,8 @@ export default function DevStudioPage() {
                 ) : (
                   <>
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Simulate & Fire Webhook
                   </>
@@ -304,7 +305,7 @@ export default function DevStudioPage() {
 
         {/* Right Column - Stepper & Output Details */}
         <div className="lg:col-span-7">
-          <div className="rounded-2xl border border-gray-800 bg-gray-900/40 backdrop-blur-xl p-6 shadow-xl h-full flex flex-col">
+          <div className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-6 shadow-xl h-full flex flex-col">
             
             {/* Live Progress Stepper */}
             {step !== 'idle' && (
@@ -530,7 +531,7 @@ export default function DevStudioPage() {
       </div>
 
       {/* History Database Log Section */}
-      <div className="rounded-2xl border border-gray-800 bg-gray-900/40 backdrop-blur-xl p-6 shadow-xl">
+      <div className="rounded-2xl border border-[#141d30] bg-[#090e1a] p-6 shadow-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">

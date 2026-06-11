@@ -32,26 +32,17 @@ export default function RegisterPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-[#030303] px-4 overflow-hidden">
-      {/* Decorative Glow Elements */}
-      <div className="absolute top-1/4 left-1/4 h-[350px] w-[350px] rounded-full bg-blue-600/10 blur-[80px] pointer-events-none animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-purple-600/10 blur-[80px] pointer-events-none animate-pulse" style={{ animationDelay: '2s' }} />
-
       <div className="w-full max-w-md animate-fade-in relative z-10">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-blue-600/10 border border-blue-500/20 mb-4">
-            <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-          </div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">
-            Pay<span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Lens</span>
+            Pay<span className="text-blue-500">Lens</span>
           </h1>
           <p className="mt-2 text-xs text-gray-400 font-medium">AI-powered payment testing and reconciliation</p>
         </div>
 
         {/* Card */}
-        <div className="glass-panel rounded-2xl p-8 shadow-2xl border border-white/5 bg-gray-900/40 backdrop-blur-xl">
+        <div className="rounded-2xl p-8 shadow-2xl border border-[#141d30] bg-[#090e1a]">
           <h2 className="text-xl font-semibold text-white mb-6">Create Account</h2>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
