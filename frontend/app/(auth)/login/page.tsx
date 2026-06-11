@@ -83,8 +83,20 @@ export default function LoginPage() {
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                saveToken('guest');
+                router.replace('/dashboard');
+              }}
+              className="w-full rounded-lg border border-gray-700 bg-transparent px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 transition-colors"
+            >
+              Continue as Guest
+            </button>
           </form>
         </div>
+
 
         <p className="mt-4 text-center text-sm text-gray-500">
           No account?{' '}
