@@ -51,18 +51,34 @@ interface TestRunLog {
 }
 
 const QUICK_SCENARIOS = [
-  { label: 'Success Visa', text: 'Simulate a successful visa payment' },
+  { label: 'Success Visa', text: 'Simulate a successful payment' },
   { label: 'Insufficient Funds', text: 'Simulate a payment failure due to insufficient funds' },
   { label: 'Expired Card', text: 'Simulate a payment that fails because the card is expired' },
   { label: 'Incorrect CVC', text: 'Simulate a payment with an incorrect CVC/CVV security code' },
   { label: 'Processing Error', text: 'Simulate a payment failure due to an unexpected system processing error' },
 ];
 
+function formatAmount(amount: number, currency: string) {
+  const symbolMap: Record<string, string> = {
+    usd: '$',
+    eur: '€',
+    gbp: '£',
+    ngn: '₦',
+    ghs: 'GH₵',
+    zar: 'R',
+  };
+  const code = currency.toLowerCase();
+  const symbol = symbolMap[code] || '';
+  return `${symbol}${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
+}
+
 export default function DevStudioPage() {
-  const [testApiKey, setTestApiKey] = useState('');
+  const [provider, setProvider] = useState<'stripe' | 'paystack'>('stripe');
+  const [stripeKey, setStripeKey] = useState('');
+  const [paystackKey, setPaystackKey] = useState('');
   const [scenario, setScenario] = useState('');
   const [webhookEndpointUrl, setWebhookEndpointUrl] = useState('');
-  const [amount, setAmount] = useState(1000); // in cents ($10.00)
+  const [amount, setAmount] = useState(1000); // in cents/kobo
   const [currency, setCurrency] = useState('usd');
   
   // App UI State
@@ -79,11 +95,23 @@ export default function DevStudioPage() {
   // Load saved keys on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setTestApiKey(localStorage.getItem('paylens_stripe_key') || '');
+      setStripeKey(localStorage.getItem('paylens_stripe_key') || '');
+      setPaystackKey(localStorage.getItem('paylens_paystack_key') || '');
       setWebhookEndpointUrl(localStorage.getItem('paylens_webhook_url') || '');
     }
     fetchHistory();
   }, []);
+
+  // Set default currency when provider changes
+  useEffect(() => {
+    if (provider === 'stripe') {
+      setCurrency('usd');
+      setAmount(1000); // $10.00
+    } else {
+      setCurrency('ngn');
+      setAmount(500000); // ₦5,000.00 (500,000 kobo)
+    }
+  }, [provider]);
 
   async function fetchHistory(query = '') {
     setHistoryLoading(true);
@@ -104,8 +132,10 @@ export default function DevStudioPage() {
 
   async function handleRunTest(e: React.FormEvent) {
     e.preventDefault();
-    if (!testApiKey) {
-      setError('Stripe Test API key is required');
+    const activeKey = provider === 'stripe' ? stripeKey : paystackKey;
+
+    if (!activeKey) {
+      setError(`${provider === 'stripe' ? 'Stripe' : 'Paystack'} Test API key is required`);
       return;
     }
     if (!scenario) {
@@ -118,7 +148,11 @@ export default function DevStudioPage() {
     }
 
     // Persist values in localStorage
-    localStorage.setItem('paylens_stripe_key', testApiKey);
+    if (provider === 'stripe') {
+      localStorage.setItem('paylens_stripe_key', stripeKey);
+    } else {
+      localStorage.setItem('paylens_paystack_key', paystackKey);
+    }
     localStorage.setItem('paylens_webhook_url', webhookEndpointUrl);
 
     setError('');
@@ -131,7 +165,8 @@ export default function DevStudioPage() {
     try {
       // Step 1: Simulate Payment
       const response = await api.post<TestRunResult>('/dev-studio/run', {
-        testApiKey,
+        provider,
+        testApiKey: activeKey,
         scenario,
         webhookEndpointUrl,
         amount: Number(amount),
@@ -178,19 +213,45 @@ export default function DevStudioPage() {
               Sandbox Configuration
             </h2>
 
+            {/* Provider Selector Tabs */}
+            <div className="grid grid-cols-2 gap-2 mb-4 p-1 bg-gray-950 border border-gray-800 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setProvider('stripe')}
+                className={`py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                  provider === 'stripe'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-900/50'
+                }`}
+              >
+                Stripe
+              </button>
+              <button
+                type="button"
+                onClick={() => setProvider('paystack')}
+                className={`py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                  provider === 'paystack'
+                    ? 'bg-teal-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-900/50'
+                }`}
+              >
+                Paystack
+              </button>
+            </div>
+
             <form onSubmit={handleRunTest} className="space-y-4">
-              {/* Stripe Key */}
+              {/* API Key */}
               <div>
                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                  Stripe Test API Secret Key
+                  {provider === 'stripe' ? 'Stripe' : 'Paystack'} Test API Secret Key
                 </label>
                 <input
                   type="password"
                   required
-                  value={testApiKey}
-                  onChange={(e) => setTestApiKey(e.target.value)}
+                  value={provider === 'stripe' ? stripeKey : paystackKey}
+                  onChange={(e) => provider === 'stripe' ? setStripeKey(e.target.value) : setPaystackKey(e.target.value)}
                   placeholder="sk_test_..."
-                  className="w-full rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                  className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition-all"
                 />
               </div>
 
@@ -204,8 +265,8 @@ export default function DevStudioPage() {
                   required
                   value={webhookEndpointUrl}
                   onChange={(e) => setWebhookEndpointUrl(e.target.value)}
-                  placeholder="https://api.yourdomain.com/webhooks/stripe"
-                  className="w-full rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                  placeholder={`https://api.yourdomain.com/webhooks/${provider}`}
+                  className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition-all"
                 />
               </div>
 
@@ -220,7 +281,7 @@ export default function DevStudioPage() {
                   value={scenario}
                   onChange={(e) => setScenario(e.target.value)}
                   placeholder="e.g. Simulate a payment that fails due to insufficient funds and alert my webhook"
-                  className="w-full rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all resize-none"
+                  className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition-all resize-none"
                 />
               </div>
 
@@ -233,7 +294,7 @@ export default function DevStudioPage() {
                       key={qs.label}
                       type="button"
                       onClick={() => setScenario(qs.text)}
-                      className="rounded-full border border-gray-800 bg-gray-900/60 hover:bg-gray-800 hover:border-gray-700 px-2.5 py-1 text-[11px] font-medium text-gray-300 transition-all cursor-pointer"
+                      className="rounded-full border border-gray-800 bg-gray-900 hover:bg-gray-800 px-2.5 py-1 text-[11px] font-medium text-gray-300 transition-colors cursor-pointer"
                     >
                       {qs.label}
                     </button>
@@ -245,13 +306,13 @@ export default function DevStudioPage() {
               <div className="pt-2 border-t border-gray-800 grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                    Amount (in Cents)
+                    Amount (in Cents/Kobo)
                   </label>
                   <input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(Number(e.target.value))}
-                    className="w-full rounded-lg border border-gray-800 bg-gray-950/40 px-3 py-1.5 text-xs text-white focus:outline-none"
+                    className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-1.5 text-xs text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -261,11 +322,22 @@ export default function DevStudioPage() {
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full rounded-lg border border-gray-800 bg-gray-950/40 px-3 py-1.5 text-xs text-white focus:outline-none"
+                    className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-1.5 text-xs text-white focus:outline-none"
                   >
-                    <option value="usd">USD ($)</option>
-                    <option value="eur">EUR (€)</option>
-                    <option value="gbp">GBP (£)</option>
+                    {provider === 'stripe' ? (
+                      <>
+                        <option value="usd">USD ($)</option>
+                        <option value="eur">EUR (€)</option>
+                        <option value="gbp">GBP (£)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="ngn">NGN (₦)</option>
+                        <option value="ghs">GHS (GH₵)</option>
+                        <option value="zar">ZAR (R)</option>
+                        <option value="usd">USD ($)</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
@@ -279,7 +351,7 @@ export default function DevStudioPage() {
               <button
                 type="submit"
                 disabled={step !== 'idle' && step !== 'done'}
-                className="w-full mt-4 flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 py-3 text-sm font-semibold text-white transition-all shadow-lg shadow-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full mt-4 flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 py-3 text-sm font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 {step !== 'idle' && step !== 'done' ? (
                   <>
@@ -315,7 +387,7 @@ export default function DevStudioPage() {
                   <div className={`h-1.5 rounded-full transition-all duration-300 ${
                     step === 'simulating' ? 'bg-blue-500 animate-pulse' : (step === 'dispatching' || step === 'explaining' || step === 'done' ? 'bg-emerald-500' : 'bg-gray-800')
                   }`} />
-                  <span className="text-[10px] font-semibold text-gray-400">1. Stripe Simulation</span>
+                  <span className="text-[10px] font-semibold text-gray-400">1. {provider === 'stripe' ? 'Stripe' : 'Paystack'} Simulation</span>
                 </div>
 
                 {/* Step 2 */}
@@ -346,12 +418,12 @@ export default function DevStudioPage() {
                   </div>
                 </div>
                 <h3 className="mt-4 text-base font-semibold text-white">
-                  {step === 'simulating' && 'Firing charge event against Stripe sandbox...'}
+                  {step === 'simulating' && `Firing charge event against ${provider === 'stripe' ? 'Stripe' : 'Paystack'} sandbox...`}
                   {step === 'dispatching' && 'Delivering event payload to webhook endpoint...'}
                   {step === 'explaining' && 'Invoking Gemini for plain English explanation...'}
                 </h3>
                 <p className="mt-1.5 text-xs text-gray-500 max-w-xs">
-                  {step === 'simulating' && 'Mapping scenario to test card tok_ visa...'}
+                  {step === 'simulating' && 'Mapping scenario to correct test card details...'}
                   {step === 'dispatching' && 'Capturing real-time endpoint latency...'}
                   {step === 'explaining' && 'Synthesizing response payloads...'}
                 </p>
@@ -406,7 +478,7 @@ export default function DevStudioPage() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-xs font-semibold text-white uppercase tracking-wider">Payment Sandbox</h4>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide ${
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide capitalize ${
                           (result?.payment.status ?? selectedHistoryItem?.paymentStatus) === 'succeeded' 
                             ? 'bg-emerald-950/50 border border-emerald-900 text-emerald-400' 
                             : 'bg-red-950/50 border border-red-900 text-red-400'
@@ -424,16 +496,16 @@ export default function DevStudioPage() {
                         </div>
                         <div className="flex justify-between">
                           <span>Amount:</span>
-                          <span className="font-semibold text-gray-200">
+                          <span className="font-semibold text-gray-200 text-[11px]">
                             {result 
-                              ? `$${(result.payment.amount / 100).toFixed(2)} ${result.payment.currency.toUpperCase()}`
+                              ? formatAmount(result.payment.amount, result.payment.currency)
                               : `Synced Record`
                             }
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Card Used:</span>
-                          <span className="font-mono text-blue-400">
+                          <span className="font-mono text-blue-400 text-[11px]">
                             {result?.payment.selectedCard.token ?? selectedHistoryItem?.selectedCard ?? 'N/A'}
                           </span>
                         </div>
@@ -550,7 +622,7 @@ export default function DevStudioPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search scenario, status, error messages..."
-              className="w-full md:w-64 rounded-lg border border-gray-800 bg-gray-950/60 px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition-all"
+              className="w-full md:w-64 rounded-lg border border-gray-800 bg-gray-950 px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition-all"
             />
             <button
               type="submit"
@@ -576,8 +648,9 @@ export default function DevStudioPage() {
               <thead>
                 <tr className="border-b border-gray-800 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   <th className="pb-3 pl-3">Scenario</th>
+                  <th className="pb-3">Provider</th>
                   <th className="pb-3">Card</th>
-                  <th className="pb-3">Stripe Status</th>
+                  <th className="pb-3">Gateway Status</th>
                   <th className="pb-3">Webhook</th>
                   <th className="pb-3">Time</th>
                   <th className="pb-3 pr-3 text-right">Action</th>
@@ -593,11 +666,20 @@ export default function DevStudioPage() {
                     <td className="py-3 pl-3 pr-4 font-medium text-white max-w-[200px] md:max-w-[300px] truncate">
                       {log.scenario}
                     </td>
+                    <td className="py-3">
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                        log.provider === 'stripe'
+                          ? 'bg-blue-950/30 text-blue-400 border border-blue-900/30'
+                          : 'bg-teal-950/30 text-teal-400 border border-teal-900/30'
+                      }`}>
+                        {log.provider}
+                      </span>
+                    </td>
                     <td className="py-3 font-mono text-[11px] text-blue-400">
                       {log.selectedCard}
                     </td>
                     <td className="py-3">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${
                         log.paymentStatus === 'succeeded' 
                           ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-950' 
                           : 'bg-red-950/30 text-red-400 border border-red-950'
