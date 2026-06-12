@@ -2,6 +2,11 @@
 
 PayLens is an intelligent financial operations platform featuring two specialized AI agents designed to solve common payment integration testing and ledger bookkeeping challenges.
 
+## Live Demo Links
+
+- **Frontend Application (Vercel)**: [https://pay-lens-jet.vercel.app](https://pay-lens-jet.vercel.app)
+- **Backend API (Railway)**: [https://paylens.railway.app](https://paylens.railway.app)
+
 ## System Architecture
 
 ```mermaid
@@ -71,9 +76,9 @@ graph TD
 
 ### Environment Variables
 
-Create a `.env` file in the `backend` directory (using port 3002 to avoid conflicts):
+Create a `.env` file in the `backend` directory:
 ```env
-PORT=3002
+PORT=3001
 MONGODB_URI=mongodb://localhost:27017/paylens
 JWT_SECRET=your_jwt_secret_token_here
 
@@ -86,7 +91,11 @@ ELASTIC_API_KEY=your_elastic_api_key_optional
 
 Create a `.env.local` file in the `frontend` directory:
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3002
+# For local development:
+NEXT_PUBLIC_API_URL=http://localhost:3001
+
+# For live/production site:
+NEXT_PUBLIC_API_URL=https://paylens.railway.app
 ```
 
 ### Installation
@@ -110,15 +119,15 @@ Start Backend Server:
 cd backend
 npm run start:dev
 ```
-The backend server runs on http://localhost:3002.
+The backend server runs on http://localhost:3001.
 
-Start Frontend Dev Server on port 3001:
+Start Frontend Dev Server:
 ```bash
 cd frontend
-npm run dev -- -p 3001
+npm run dev
 ```
 
-Open http://localhost:3001 in your web browser.
+Open http://localhost:3000 in your web browser.
 
 ---
 
