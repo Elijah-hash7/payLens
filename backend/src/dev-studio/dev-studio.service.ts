@@ -74,22 +74,28 @@ export class DevStudioService {
     });
 
     // Gemini explains the result in plain English
-    const explanation = await this.geminiService.explainTestRun({
-      scenario,
-      provider: provider || 'stripe',
-      testCard: payment.selectedCard.token,
-      paymentResult: {
-        status: payment.status,
-        chargeId: payment.chargeId,
-        amount: payment.amount,
-        currency: payment.currency,
-        errorCode: payment.errorCode,
-        errorMessage: payment.errorMessage,
-      },
-      webhookStatusCode: webhook.statusCode ?? undefined,
-      webhookBody: webhook.body ? (webhook.body as Record<string, unknown>) : undefined,
-      webhookError: webhook.error ?? undefined,
-    });
+    let explanation: string;
+    try {
+      explanation = await this.geminiService.explainTestRun({
+        scenario,
+        provider: provider || 'stripe',
+        testCard: payment.selectedCard.token,
+        paymentResult: {
+          status: payment.status,
+          chargeId: payment.chargeId,
+          amount: payment.amount,
+          currency: payment.currency,
+          errorCode: payment.errorCode,
+          errorMessage: payment.errorMessage,
+        },
+        webhookStatusCode: webhook.statusCode ?? undefined,
+        webhookBody: webhook.body ? (webhook.body as Record<string, unknown>) : undefined,
+        webhookError: webhook.error ?? undefined,
+      });
+    } catch (err: any) {
+      this.logger.warn(`Gemini explanation unavailable: ${err.message}`);
+      explanation = `Payment ${payment.status === 'succeeded' ? 'succeeded' : 'failed'}. Webhook ${webhook.fired ? `delivered (HTTP ${webhook.statusCode})` : 'could not be delivered'}. Gemini analysis is temporarily unavailable — please try again shortly.`;
+    }
 
     // Save to Elastic — non-blocking, errors are swallowed inside indexTestRun
     await this.elasticService.indexTestRun({
