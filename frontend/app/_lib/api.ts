@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://paylens.railway.app';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://paylens-backend.vercel.app';
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;

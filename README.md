@@ -5,7 +5,7 @@ PayLens is an intelligent financial operations platform featuring two specialize
 ## Live Demo Links
 
 - **Frontend Application (Vercel)**: [https://pay-lens-jet.vercel.app](https://pay-lens-jet.vercel.app)
-- **Backend API (Railway)**: [https://paylens.railway.app](https://paylens.railway.app)
+- **Backend API (Vercel)**: [https://paylens-backend.vercel.app](https://paylens-backend.vercel.app)
 
 ## System Architecture
 
@@ -95,7 +95,7 @@ Create a `.env.local` file in the `frontend` directory:
 NEXT_PUBLIC_API_URL=http://localhost:3001
 
 # For live/production site:
-NEXT_PUBLIC_API_URL=https://paylens.railway.app
+NEXT_PUBLIC_API_URL=https://paylens-backend.vercel.app
 ```
 
 ### Installation
