@@ -71,9 +71,9 @@ graph TD
 
 ### Environment Variables
 
-Create a `.env` file in the `backend` directory:
+Create a `.env` file in the `backend` directory (using port 3002 to avoid conflicts):
 ```env
-PORT=3001
+PORT=3002
 MONGODB_URI=mongodb://localhost:27017/paylens
 JWT_SECRET=your_jwt_secret_token_here
 
@@ -86,11 +86,7 @@ ELASTIC_API_KEY=your_elastic_api_key_optional
 
 Create a `.env.local` file in the `frontend` directory:
 ```env
-# For local development:
-NEXT_PUBLIC_API_URL=http://localhost:3001
-
-# For live/production site (replace with your deployed backend URL):
-# NEXT_PUBLIC_API_URL=https://your-deployed-backend-url.com
+NEXT_PUBLIC_API_URL=http://localhost:3002
 ```
 
 ### Installation
@@ -114,15 +110,15 @@ Start Backend Server:
 cd backend
 npm run start:dev
 ```
-The backend server runs on http://localhost:3001.
+The backend server runs on http://localhost:3002.
 
-Start Frontend Dev Server:
+Start Frontend Dev Server on port 3001:
 ```bash
 cd frontend
-npm run dev
+npm run dev -- -p 3001
 ```
 
-Open http://localhost:3000 in your web browser.
+Open http://localhost:3001 in your web browser.
 
 ---
 
