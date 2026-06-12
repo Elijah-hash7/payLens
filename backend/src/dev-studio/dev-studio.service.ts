@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { StripeService } from '../stripe/stripe.service';
 import { PaystackService } from '../paystack/paystack.service';
 import { WebhookService, WebhookResult } from '../webhook/webhook.service';
@@ -25,6 +25,8 @@ export interface TestRunResult {
 
 @Injectable()
 export class DevStudioService {
+  private readonly logger = new Logger(DevStudioService.name);
+
   constructor(
     private readonly stripeService: StripeService,
     private readonly paystackService: PaystackService,
